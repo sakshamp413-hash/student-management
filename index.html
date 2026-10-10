@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Student Analytics — College Management Dashboard</title>
+  <meta name="description" content="A lightweight, front-end college management dashboard: track student attendance, marks, grades and performance with charts and CSV reports." />
+  <meta name="theme-color" content="#1F6B4F" />
+
+  <!-- Open Graph / link preview -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Student Analytics — College Management Dashboard" />
+  <meta property="og:description" content="Track attendance, marks and performance across courses. Charts, analytics and CSV export — no backend required." />
+  <meta property="og:site_name" content="Student Analytics" />
+  <meta name="twitter:card" content="summary" />
+
+  <!-- Favicon: graduation cap in brand green -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231F6B4F' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 10 12 5 2 10l10 5 10-5Z'/%3E%3Cpath d='M6 12v5c0 1.5 2.7 2.5 6 2.5s6-1 6-2.5v-5'/%3E%3C/svg%3E" />
+
+  <!-- Fonts: Plus Jakarta Sans (headings) + Inter (body), display=swap -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Chart.js (pinned) + Lucide icons (pinned) -->
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script defer src="https://unpkg.com/lucide@0.453.0/dist/umd/lucide.min.js"></script>
+
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+
+<!-- ============================================================
+     1. LOGIN PAGE — split layout
+     ============================================================ -->
+<section id="loginPage" class="login-page">
+  <!-- Left: dark green brand panel -->
+  <aside class="login-visual">
+    <div class="login-visual-top">
+      <div class="login-logo on-dark">
+        <span class="logo-badge"><i data-lucide="graduation-cap"></i></span>
+        <span class="logo-text"><b>Student</b><em>Analytics</em></span>
+      </div>
+    </div>
+    <div class="login-visual-copy">
+      <p class="micro-label on-dark">College Management</p>
+      <h2>Attendance, marks and performance — in one clear view.</h2>
+      <p class="login-visual-sub">A front-end dashboard for students and administrators. No backend, no setup: your data stays on this device.</p>
+    </div>
+    <p class="login-visual-foot">Built with HTML, CSS &amp; JavaScript</p>
+  </aside>
+
+  <!-- Right: form -->
+  <div class="login-formside">
+    <div class="login-card">
+      <h1 class="login-title">Sign in</h1>
+      <p class="login-sub muted">Welcome — choose your role to continue.</p>
+
+      <div class="role-toggle" role="tablist" aria-label="Select role">
+        <button type="button" class="role-btn active" data-role="student" role="tab" aria-selected="true">Student</button>
+        <button type="button" class="role-btn" data-role="admin" role="tab" aria-selected="false">Admin</button>
+      </div>
+
+      <form id="loginForm" class="login-form" novalidate>
+        <label for="loginId">ID</label>
+        <input type="text" id="loginId" placeholder="e.g. STU-101" autocomplete="off" aria-describedby="loginError" />
+
+        <label for="loginPw">Password</label>
+        <input type="password" id="loginPw" placeholder="Enter password" autocomplete="off" aria-describedby="loginError" />
+
+        <button type="submit" class="btn-primary">Login</button>
+        <p id="loginError" class="login-error hidden" role="alert">Invalid ID or password.</p>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     2. STUDENT DASHBOARD
+     ============================================================ -->
+<section id="studentPage" class="hidden">
+  <nav class="navbar">
+    <div class="nav-logo">
+      <span class="logo-badge sm"><i data-lucide="graduation-cap"></i></span>
+      Student Analytics
+    </div>
+    <button class="btn-ghost" id="studentLogout"><i data-lucide="log-out"></i> Logout</button>
+  </nav>
+
+  <div class="container">
+    <header class="page-head">
+      <span class="micro-label">My Dashboard</span>
+      <h1 id="stuGreeting">Hi</h1>
+      <p id="stuMeta" class="muted"></p>
+    </header>
+
+    <div id="stuWarning" class="warning-banner hidden"></div>
+
+    <!-- 3 summary cards -->
+    <div class="cards-grid cols-3">
+      <div class="stat-card feature">
+        <span class="stat-label">Overall Attendance</span>
+        <span id="stuAttendance" class="stat-value">0%</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Average Marks</span>
+        <span id="stuMarks" class="stat-value">0%</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">Grade</span>
+        <span id="stuGrade" class="stat-value">-</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2 class="panel-title">Subject Performance</h2>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Subject</th><th class="num">Attendance %</th><th class="num">Marks</th><th>Grade</th><th>Status</th></tr>
+          </thead>
+          <tbody id="stuSubjectBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2 class="panel-title">Marks per Subject</h2>
+      <div class="chart-wrap"><canvas id="stuChart"></canvas></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     3. ADMIN PANEL
+     ============================================================ -->
+<section id="adminPage" class="admin-shell hidden">
+
+  <!-- Overlay behind mobile sidebar -->
+  <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+  <!-- ---------- SIDEBAR ---------- -->
+  <aside id="sidebar" class="sidebar" aria-label="Main navigation">
+    <div class="sidebar-logo">
+      <span class="logo-badge"><i data-lucide="graduation-cap"></i></span>
+      <span class="logo-text"><b>Student</b><em>Analytics</em></span>
+    </div>
+
+    <nav class="side-nav">
+      <span class="side-indicator" aria-hidden="true"></span>
+      <button class="side-link active" data-tab="dashboard"><i data-lucide="layout-dashboard"></i> Dashboard</button>
+      <button class="side-link" data-tab="students"><i data-lucide="users"></i> Students</button>
+      <button class="side-link" data-tab="attendance"><i data-lucide="calendar-check"></i> Attendance</button>
+      <button class="side-link" data-tab="marks"><i data-lucide="file-text"></i> Marks &amp; Results</button>
+      <button class="side-link" data-tab="analytics"><i data-lucide="bar-chart-3"></i> Analytics &amp; Reports</button>
+      <button class="side-link" data-tab="about"><i data-lucide="info"></i> About Project</button>
+    </nav>
+
+    <div class="side-bottom">
+      <div class="help-card">
+        <i data-lucide="life-buoy"></i>
+        <div>
+          <strong>Need help?</strong>
+          <span>Check the docs or contact support.</span>
+        </div>
+      </div>
+      <div class="profile-row">
+        <span class="avatar green">AS</span>
+        <div>
+          <strong>Admin User</strong>
+          <span>Administrator</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ---------- MAIN AREA ---------- -->
+  <div class="admin-main">
+    <!-- Top header -->
+    <header class="admin-topbar">
+      <div class="topbar-left">
+        <button id="hamburger" class="icon-btn mobile-only" aria-label="Open navigation menu"><i data-lucide="menu"></i></button>
+        <div>
+          <span class="topbar-kicker">COLLEGE MANAGEMENT</span>
+          <h2 id="tabTitle" class="topbar-title">Dashboard</h2>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <div class="topbar-search">
+          <i data-lucide="search"></i>
+          <input type="text" id="topSearch" placeholder="Search students…" aria-label="Search students" />
+        </div>
+        <button class="icon-btn" aria-label="Notifications"><i data-lucide="bell"></i></button>
+        <span class="avatar green">AS</span>
+        <button class="btn-ghost sm" id="adminLogout" aria-label="Log out"><i data-lucide="log-out"></i></button>
+      </div>
+    </header>
+
+    <div class="admin-content">
+
+      <!-- ===== TAB: DASHBOARD ===== -->
+      <div class="tab-panel" data-panel="dashboard">
+        <div class="dash-head">
+          <div>
+            <span class="micro-label">Overview</span>
+            <h3 class="dash-title">Institution snapshot</h3>
+          </div>
+          <span class="last-updated">Last updated: <time id="lastUpdated">—</time></span>
+        </div>
+
+        <div class="cards-grid cols-4">
+          <div class="stat-card feature"><span class="stat-label">Total Students</span><span id="dTotal" class="stat-value">0</span></div>
+          <div class="stat-card"><span class="stat-label">Avg Attendance</span><span id="dAtt" class="stat-value">0%</span></div>
+          <div class="stat-card"><span class="stat-label">Avg Marks</span><span id="dMarks" class="stat-value">0%</span></div>
+          <div class="stat-card"><span class="stat-label">Students at Risk</span><span id="dRisk" class="stat-value val-red">0</span></div>
+        </div>
+
+        <div class="split-grid">
+          <div class="panel">
+            <h2 class="panel-title">Average Marks by Course</h2>
+            <div class="chart-wrap"><canvas id="courseChart"></canvas></div>
+          </div>
+          <div class="panel">
+            <h2 class="panel-title">Recent Activity</h2>
+            <ul id="activityList" class="activity-list"></ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== TAB: STUDENTS ===== -->
+      <div class="tab-panel hidden" data-panel="students">
+        <div class="section-head">
+          <h2 class="panel-title">Students</h2>
+          <button class="btn-primary sm" id="addStudentBtn"><i data-lucide="plus"></i> Add student</button>
+        </div>
+
+        <div class="filters-row">
+          <div class="topbar-search grow">
+            <i data-lucide="search"></i>
+            <input type="text" id="studentSearch" placeholder="Search by name or ID…" aria-label="Search students by name or ID" />
+          </div>
+          <select id="courseFilter" class="select" aria-label="Filter by course"></select>
+          <span id="studentCount" class="count-pill">0 students</span>
+        </div>
+
+        <div class="panel no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Student</th><th>Course</th><th>Semester</th>
+                  <th>Attendance</th><th class="num">Avg Marks</th><th>Performance</th><th class="num">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="studentsBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== TAB: ATTENDANCE ===== -->
+      <div class="tab-panel hidden" data-panel="attendance">
+        <div class="panel">
+          <div class="filters-row">
+            <div><label class="field-label" for="attCourse">Course</label><select id="attCourse" class="select"></select></div>
+            <div><label class="field-label" for="attSubject">Subject</label><select id="attSubject" class="select"></select></div>
+            <div><label class="field-label" for="attDate">Date</label><input type="date" id="attDate" class="select" /></div>
+            <button class="btn-primary sm push-right" id="saveAttendance"><i data-lucide="save"></i> Save attendance</button>
+          </div>
+        </div>
+        <div class="panel no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Student</th><th class="num">Current %</th><th>Mark</th></tr></thead>
+              <tbody id="attendanceBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== TAB: MARKS & RESULTS ===== -->
+      <div class="tab-panel hidden" data-panel="marks">
+        <div class="panel">
+          <div class="filters-row">
+            <div><label class="field-label" for="marksCourse">Course</label><select id="marksCourse" class="select"></select></div>
+            <div><label class="field-label" for="marksSubject">Subject</label><select id="marksSubject" class="select"></select></div>
+            <button class="btn-primary sm push-right" id="saveMarks"><i data-lucide="save"></i> Save marks</button>
+          </div>
+        </div>
+        <div class="panel no-pad">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Student</th><th class="num">Marks /100</th><th>Grade</th></tr></thead>
+              <tbody id="marksBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== TAB: ANALYTICS & REPORTS ===== -->
+      <div class="tab-panel hidden" data-panel="analytics">
+        <div class="split-grid">
+          <div class="panel">
+            <h2 class="panel-title">Performance Distribution</h2>
+            <div class="chart-wrap"><canvas id="perfChart"></canvas></div>
+          </div>
+          <div class="panel">
+            <h2 class="panel-title">Attendance by Course</h2>
+            <div class="chart-wrap"><canvas id="attCourseChart"></canvas></div>
+          </div>
+        </div>
+        <div class="split-grid">
+          <div class="panel">
+            <h2 class="panel-title">Top 5 Students</h2>
+            <ol id="topStudents" class="top-list"></ol>
+          </div>
+          <div class="panel center-panel">
+            <h2 class="panel-title">Export</h2>
+            <p class="muted">Download the full student table as a CSV file.</p>
+            <button class="btn-primary" id="downloadReport"><i data-lucide="download"></i> Download report</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== TAB: ABOUT ===== -->
+      <div class="tab-panel hidden" data-panel="about">
+        <div class="panel about-panel">
+          <h2 class="panel-title">About This Project</h2>
+          <p class="muted">
+            Student Analytics is a lightweight, front-end-only college management dashboard.
+            It lets students view their attendance and academic performance, and lets administrators
+            manage students, record attendance, enter marks, and review analytics — all without a backend.
+          </p>
+
+          <h3 class="about-sub">Features</h3>
+          <ul class="feature-list">
+            <li><i data-lucide="check"></i> Student dashboard with attendance &amp; marks</li>
+            <li><i data-lucide="check"></i> Tabbed admin panel (6 sections)</li>
+            <li><i data-lucide="check"></i> Attendance marking &amp; marks entry</li>
+            <li><i data-lucide="check"></i> Charts, analytics &amp; CSV export</li>
+            <li><i data-lucide="check"></i> Data persisted with localStorage</li>
+          </ul>
+
+          <h3 class="about-sub">Tech Stack</h3>
+          <div class="tech-tags">
+            <span>HTML5</span><span>CSS3</span><span>JavaScript</span>
+            <span>Chart.js</span><span>Lucide Icons</span><span>localStorage</span>
+          </div>
+
+          <h3 class="about-sub">Team</h3>
+          <p class="muted">Aarav · Diya · Kabir · Meera</p>
+
+          <h3 class="about-sub">Demo data</h3>
+          <p class="muted">Changes you make are saved to this browser. Reset to restore the original sample students.</p>
+          <button class="btn-ghost" id="resetDemo"><i data-lucide="rotate-ccw"></i> Reset demo data</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     MODAL — Add / Edit student
+     ============================================================ -->
+<div id="modalOverlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="modalTitle">Add Student</h2>
+      <button class="icon-btn" id="modalClose" aria-label="Close dialog"><i data-lucide="x"></i></button>
+    </div>
+
+    <form id="studentForm" class="modal-form" novalidate>
+      <div class="form-grid">
+        <div>
+          <label for="fName">Name</label>
+          <input type="text" id="fName" />
+          <span class="field-error hidden" data-err="fName"></span>
+        </div>
+        <div>
+          <label for="fId">Student ID</label>
+          <input type="text" id="fId" placeholder="STU-108" />
+          <span class="field-error hidden" data-err="fId"></span>
+        </div>
+        <div><label for="fCourse">Course</label><input type="text" id="fCourse" /><span class="field-error hidden" data-err="fCourse"></span></div>
+        <div><label for="fSemester">Semester</label><input type="text" id="fSemester" /><span class="field-error hidden" data-err="fSemester"></span></div>
+        <div><label for="fRoll">Roll Number</label><input type="text" id="fRoll" /></div>
+        <div><label for="fPassword">Password</label><input type="text" id="fPassword" value="1234" /></div>
+      </div>
+
+      <h3 class="modal-subtitle">Subjects — attended / total classes · marks /100</h3>
+      <div id="subjectInputs" class="subject-inputs"></div>
+      <p id="subjectError" class="field-error hidden"></p>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-ghost" id="modalCancel">Cancel</button>
+        <button type="submit" class="btn-primary">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- View student (read-only) modal -->
+<div id="viewOverlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="viewTitle">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="viewTitle">Student</h2>
+      <button class="icon-btn" id="viewClose" aria-label="Close dialog"><i data-lucide="x"></i></button>
+    </div>
+    <div id="viewBody"></div>
+  </div>
+</div>
+
+<!-- Toast notifications -->
+<div id="toastHost" class="toast-host" aria-live="polite" aria-atomic="false"></div>
+
+<script defer src="./script.js"></script>
+</body>
+</html>
